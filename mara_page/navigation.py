@@ -2,6 +2,8 @@
 
 import typing
 
+from . import acl
+
 
 class NavigationEntry:
     def __init__(self,
@@ -11,7 +13,8 @@ class NavigationEntry:
                  rank: int = 1,
                  description: str = None,
                  visible: bool = True,
-                 children: typing.Optional[typing.List['NavigationEntry']] = None):
+                 children: typing.Optional[typing.List['NavigationEntry']] = None,
+                 acl_resource: acl.AclResource = None):
         """
         A single entry of the navigation sidebar.
 
@@ -24,6 +27,7 @@ class NavigationEntry:
             description: An optional help text
             visible: When False, then the entry is not shown
             children: A list of sub-entries
+            acl_resource: A acl resource which is required to see the navigation entry
         """
         self.label = label
         self.uri_fn = uri_fn
@@ -32,10 +36,19 @@ class NavigationEntry:
         self.description = description
         self.children = []
         self.parent = None
-        self.visible = visible
+        self._visible = visible
+        self.acl_resource = acl_resource
         if children:
             for child in children:
                 self.add_child(child)
+
+    @property
+    def visible(self) -> bool:
+        return self._visible and (self.acl_resource is None or acl.current_user_has_permission(self.acl_resource))
+
+    @visible.setter
+    def visible(self, value):
+        self._visible = value
 
     def add_child(self, child: 'NavigationEntry'):
         self.children.append(child)
